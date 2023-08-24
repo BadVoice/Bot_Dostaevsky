@@ -5,7 +5,7 @@ namespace Telegram_bot
 {
     class Program
     {
-        private static ITelegramBotClient botClient;
+        private static ITelegramBotClient? botClient;
 
         static void Main(string[] args)
         {
