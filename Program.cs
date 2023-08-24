@@ -12,7 +12,7 @@ namespace Telegram_bot
             botClient = new TelegramBotClient("6558772967:AAF9pO5ILzUVCqtpcIIG3cNygzkmkia71ac");
 
             var me = botClient.GetMeAsync().Result;
-            Console.WriteLine($"Bot id: {me.Id}. Bot Name: {me.FirstName}");
+            Console.WriteLine($"Bot id: {me.Id}. Имя бота: {me.FirstName}");
             Console.ReadKey();
         }
     }
