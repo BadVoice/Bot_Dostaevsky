@@ -6,60 +6,94 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-var botClient = new TelegramBotClient("6558772967:AAF9pO5ILzUVCqtpcIIG3cNygzkmkia71ac");
 
-using CancellationTokenSource cts = new();
 
-// StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
-ReceiverOptions receiverOptions = new()
-{
-    AllowedUpdates = Array.Empty<UpdateType>() // receive all update types except ChatMember related updates
-};
+namespace DostaevskyBot {
 
-botClient.StartReceiving(
-    updateHandler: HandleUpdateAsync,
-    pollingErrorHandler: HandlePollingErrorAsync,
-    receiverOptions: receiverOptions,
-    cancellationToken: cts.Token
-);
 
-var me = await botClient.GetMeAsync();
+    class Program {
 
-Console.WriteLine($"Start listening for @{me.Username}");
-Console.ReadLine();
+        // Bot Token
+        public static TelegramBotClient Client;
 
-// Send cancellation request to stop bot
-cts.Cancel();
+        //Messages and user info
+        long chatId = 0;
+        string messageText;
+        int messageId;
+        string firstName;
+        string lastName;
+        long id;
+        Message sentMessage;
 
-async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-{
-    // Only process Message updates: https://core.telegram.org/bots/api#message
-    if (update.Message is not { } message)
-        return;
-    // Only process text messages
-    if (message.Text is not { } messageText)
-        return;
+        public static CancellationTokenSource cts;
 
-    var chatId = message.Chat.Id;
 
-    Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
+         static void Main(string[] args)
+        {
+            Client = new TelegramBotClient("6558772967:AAF9pO5ILzUVCqtpcIIG3cNygzkmkia71ac");
+            cts = new CancellationTokenSource();
 
-    // Echo received message text
-    Message sentMessage = await botClient.SendTextMessageAsync(
-        chatId: chatId,
-        text: "You said:\n" + messageText,
-        cancellationToken: cancellationToken);
+            Program me = new Program();
+
+            me.TestBot(Client, cts);
+
+
+        }
+         
+        public void TestBot(ITelegramBotClient Client, CancellationTokenSource cts)
+        {
+            var bot = Client.GetMeAsync().Result;
+
+            Console.WriteLine($"{bot.Id}, {bot.Username}");
+
+
+            cts.Cancel();
+        }
+
+        // Начало приема бота, не блокирует вызывающий поток.
+        // Прием осуществляется на ThreadPool.
+        
+        public void StartReceiving(ITelegramBotClient Client, CancellationTokenSource cts)
+        {
+            var receiverOptions = new ReceiverOptions { AllowedUpdates = { } };
+
+            Client.StartReceiving(HandleUpdateAsync, HandleErrorAsync, receiverOptions, cancellationToken: cts.Token);
+        }
+
+
+
+
+        // Ответ бота в input
+
+       async Task HandleUpdateAsync(ITelegramBotClient Client, Update update, CancellationToken cts)
+        {
+            if (update.Type != UpdateType.Message)
+                return;
+
+            if (update.Message!.Type != MessageType.Text)
+                return;
+
+            //set variables
+            chatId = update.Message.Chat.Id;
+            messageText = update.Message.Text;
+
+           
+        }
+
+
+        Task HandleErrorAsync(ITelegramBotClient Client, Exception exception, CancellationToken cts)
+        {
+            var ErrorMessage = exception switch
+            {
+                ApiRequestException apiRequestException
+                    => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                _ => exception.ToString()
+            };
+
+            Console.WriteLine(ErrorMessage);
+            return Task.CompletedTask;
+        }
+
+    }
 }
 
-Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
-{
-    var ErrorMessage = exception switch
-    {
-        ApiRequestException apiRequestException
-            => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
-        _ => exception.ToString()
-    };
-
-    Console.WriteLine(ErrorMessage);
-    return Task.CompletedTask;
-}
