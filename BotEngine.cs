@@ -33,6 +33,11 @@ namespace DostaevskyBot
                 ); // передаем аргументы в метод StartReceiving, далее пишем по документации обработку обновления и обработку ошибок 
                    // HandleUpdateAsync, HandlePollingErrorAsync капипастим с документации
 
+
+            var me = await _botClient.GetMeAsync();
+
+            Console.WriteLine($"Start listening for @{me.Id}");
+            Console.ReadLine();
         }
 
     }
