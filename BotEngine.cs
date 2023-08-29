@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -38,6 +39,39 @@ namespace DostaevskyBot
 
             Console.WriteLine($"Start listening for @{me.Id}");
             Console.ReadLine();
+        }
+
+        private async Task HandleUpdateAsync(ITelegramBotClient _botClient, Update update, CancellationToken cts)
+        {
+            // Only process Message updates: https://core.telegram.org/bots/api#message
+            if (update.Message is not { } message)
+                return;
+            // Only process text messages
+            if (message.Text is not { } messageText)
+                return;
+
+            var chatId = message.Chat.Id;
+
+            Console.WriteLine($"Запрос '{messageText}' сообщения из чата {chatId}.");
+
+            // Echo received message text
+            Message sentMessage = await _botClient.SendTextMessageAsync(
+                chatId: chatId,
+                text: "Ты написал:\n" + messageText,
+                cancellationToken: cts);
+        }
+
+        private Task HandlePollingErrorAsync(ITelegramBotClient _botClient, Exception exception, CancellationToken cts)
+        {
+            var ErrorMessage = exception switch
+            {
+                ApiRequestException apiRequestException
+                    => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                _ => exception.ToString()
+            };
+
+            Console.WriteLine(ErrorMessage);
+            return Task.CompletedTask;
         }
 
     }
